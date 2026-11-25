@@ -321,6 +321,9 @@ export default function App() {
               />
             </svg>
             <span>GeoAlert-pa</span>
+            <span className="text-[11px] font-mono font-semibold text-slate-500 dark:text-slate-400">
+              v1.1
+            </span>
           </a>
 
           <nav

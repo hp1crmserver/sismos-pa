@@ -28,7 +28,10 @@ jobs:
           node-version: 22
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps --no-audit --no-fund
+        run: npm install --no-audit --no-fund
+
+      - name: TypeScript check
+        run: npm run lint
 
       - name: Build static bundle for GitHub Pages
         run: npm run build
