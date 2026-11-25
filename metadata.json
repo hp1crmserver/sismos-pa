@@ -1,0 +1,8 @@
+{
+  "name": "Remix Sismos-pa",
+  "description": "Plataforma de monitoreo sísmico en tiempo real para alertas, avisos y boletines del Instituto de Geociencias de la Universidad de Panamá (IGC-UP), USGS y EMSC con mapas Esri, alertas sonoras, generador 4:5 y exportación PDF.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
