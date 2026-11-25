@@ -54,7 +54,18 @@ git push -u origin main
 
 ---
 
-### Opción A — Despliegue en Render (1 clic con `render.yaml`)
+### Opción A — Despliegue en GitHub Pages (`https://TU_USUARIO.github.io/sismos-pa/` o dominio propio)
+
+El proyecto incluye el workflow `.github/workflows/deploy-pages.yml` y configuración de rutas relativas (`base: './'` en `vite.config.ts`) para subdirectorios como `/sismos-pa/`:
+
+1. En tu repositorio de GitHub ve a **Settings → Pages**.
+2. En **Build and deployment → Source**, selecciona **GitHub Actions** (no selecciones *Deploy from a branch*, ya que serviría el `index.html` sin compilar y mostraría la página en blanco).
+3. Al hacer `push` a `main`, el workflow ejecutará `npm run build` y publicará la carpeta `dist/`.
+4. En modo estático (GitHub Pages), USGS, EMSC y las capas/tarjetas de Esri funcionan directamente desde el navegador. La fuente IGC-UP requiere el backend proxy Node/Express (Opciones B–D).
+
+---
+
+### Opción B — Despliegue en Render (1 clic con `render.yaml`)
 
 1. Inicia sesión en [Render](https://render.com) y elige **New → Blueprint** (o **New → Web Service**).
 2. Conecta tu repositorio de GitHub `geoalert-pa`.
@@ -67,7 +78,7 @@ git push -u origin main
 
 ---
 
-### Opción B — Despliegue en Railway
+### Opción C — Despliegue en Railway
 
 1. En [Railway](https://railway.app), selecciona **New Project → Deploy from GitHub repo**.
 2. Selecciona el repositorio `geoalert-pa`.
@@ -78,7 +89,7 @@ git push -u origin main
 
 ---
 
-### Opción C — Despliegue con Docker (Google Cloud Run, Fly.io, VPS, Coolify, Dokploy)
+### Opción D — Despliegue con Docker (Google Cloud Run, Fly.io, VPS, Coolify, Dokploy)
 
 El repositorio incluye un `Dockerfile` multi-arquitectura basado en `node:22-alpine`:
 

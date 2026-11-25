@@ -23,12 +23,12 @@ import type {
   RegionScope,
   SeismicAgency,
   SeismicEvent,
-  SeismicFeedResponse,
   ThemeMode,
   WorkspaceTab,
 } from './types/seismic';
 import { triggerEventAlertAudio } from './utils/audioAlerts';
 import { exportSingleEventPdf } from './utils/pdfExporter';
+import { fetchSeismicFeedClient } from './utils/seismicClient';
 import { BULLETIN_LABEL, SEVERITY_META, formatPanamaDateTime } from './utils/seismicFormat';
 
 const ALL_AGENCIES: SeismicAgency[] = ['IGC-UP', 'USGS', 'EMSC'];
@@ -154,20 +154,14 @@ export default function App() {
       setErrorMsg(null);
 
       try {
-        const params = new URLSearchParams({
-          sources: activeAgencies.join(','),
+        const data = await fetchSeismicFeedClient({
+          sources: activeAgencies,
           scope,
           startDate,
           endDate,
-          minMag: '0',
+          minMag: 0,
+          forceRefresh,
         });
-        if (forceRefresh) params.set('refresh', '1');
-
-        const res = await fetch(`/api/seismic/events?${params.toString()}`);
-        if (!res.ok) {
-          throw new Error(`Error del servidor (${res.status})`);
-        }
-        const data = (await res.json()) as SeismicFeedResponse;
 
         setEvents(data.events);
         setAgencyStatuses(data.agencyStatuses);

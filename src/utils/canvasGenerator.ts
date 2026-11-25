@@ -26,18 +26,31 @@ function latLonToTileFloat(lat: number, lon: number, zoom: number): { x: number;
   return { x, y };
 }
 
-function loadTileImage(url: string): Promise<HTMLImageElement | null> {
+const ESRI_SERVICE_PATHS: Record<EsriLayerId, string> = {
+  World_Imagery: 'World_Imagery',
+  World_Topo_Map: 'World_Topo_Map',
+  World_Dark_Gray_Base: 'Canvas/World_Dark_Gray_Base',
+  World_Light_Gray_Base: 'Canvas/World_Light_Gray_Base',
+  World_Ocean_Base: 'Ocean/World_Ocean_Base',
+  World_Street_Map: 'World_Street_Map',
+};
+
+function loadTileImage(url: string, fallbackUrl?: string): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    const timer = setTimeout(() => resolve(null), 4500);
+    const timer = setTimeout(() => resolve(null), 5000);
     img.onload = () => {
       clearTimeout(timer);
       resolve(img);
     };
     img.onerror = () => {
       clearTimeout(timer);
-      resolve(null);
+      if (fallbackUrl && img.src !== fallbackUrl) {
+        loadTileImage(fallbackUrl).then(resolve);
+      } else {
+        resolve(null);
+      }
     };
     img.src = url;
   });
@@ -189,9 +202,11 @@ export async function renderEventCard4x5(
       if (drawX + tileSize < mapX || drawX > mapX + mapW || drawY + tileSize < mapY || drawY > mapY + mapH) {
         continue;
       }
-      const proxyUrl = `/api/esri-tile/${options.esriLayer}/${zoom}/${ty}/${tx}`;
+      const servicePath = ESRI_SERVICE_PATHS[options.esriLayer] || 'World_Imagery';
+      const proxyUrl = `./api/esri-tile/${options.esriLayer}/${zoom}/${ty}/${tx}`;
+      const directUrl = `https://server.arcgisonline.com/ArcGIS/rest/services/${servicePath}/MapServer/tile/${zoom}/${ty}/${tx}`;
       tilePromises.push(
-        loadTileImage(proxyUrl).then((img) => ({ dx: drawX, dy: drawY, img }))
+        loadTileImage(proxyUrl, directUrl).then((img) => ({ dx: drawX, dy: drawY, img }))
       );
     }
   }
