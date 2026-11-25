@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Install dependencies first for Docker layer caching
 COPY package*.json ./
-RUN npm ci
+RUN npm install --legacy-peer-deps --no-audit --no-fund
 
 # Copy application source and compile Vite production bundle
 COPY . .
