@@ -18,6 +18,24 @@ function getAudioContext(): AudioContext | null {
   return sharedAudioCtx;
 }
 
+export function unlockAudioAlerts(): void {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  try {
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+    // Play silent 1-sample buffer to unlock iOS/Android Web Audio inside user gesture
+    const buffer = ctx.createBuffer(1, 1, 22050);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+    source.start(0);
+  } catch {
+    // ignore
+  }
+}
+
 function playToneSequence(
   notes: Array<{ freq: number; duration: number; delay: number; type?: OscillatorType }>,
   volume: number

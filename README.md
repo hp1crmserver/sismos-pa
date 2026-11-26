@@ -60,8 +60,8 @@ El proyecto incluye el workflow `.github/workflows/deploy-pages.yml` y configura
 
 1. En tu repositorio de GitHub ve a **Settings → Pages**.
 2. En **Build and deployment → Source**, selecciona **GitHub Actions** (no selecciones *Deploy from a branch*, ya que serviría el `index.html` sin compilar y mostraría la página en blanco).
-3. Al hacer `push` a `main`, el workflow ejecutará `npm run build` y publicará la carpeta `dist/`.
-4. En modo estático (GitHub Pages), USGS, EMSC y las capas/tarjetas de Esri funcionan directamente desde el navegador. La fuente IGC-UP requiere el backend proxy Node/Express (Opciones B–D).
+3. Al hacer `push` a `main` (o cada hora mediante `schedule`), el workflow actualizará los datos del IGC-UP, ejecutará `npm run build` y publicará la carpeta `dist/`.
+4. En modo estático (GitHub Pages), USGS, EMSC, IGC-UP (vía relays CORS en vivo con respaldo de snapshot) y las capas/tarjetas de Esri funcionan directamente.
 
 ---
 

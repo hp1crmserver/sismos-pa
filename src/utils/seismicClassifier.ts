@@ -156,7 +156,11 @@ export function parseIgcUpHtml(html: string): SeismicEvent[] {
     seenKeys.add(dedupKey);
 
     const timestamp = parsePanamaLocalToUtcMs(dateStr, timeStr);
-    const status: EventReviewStatus = estadoRaw.includes('AUTO') ? 'AUTOMATICO' : 'REVISADO';
+    const status: EventReviewStatus = estadoRaw.includes('AUTO')
+      ? 'AUTOMATICO'
+      : estadoRaw.includes('PRELIM')
+      ? 'PRELIMINAR'
+      : 'REVISADO';
     const regionCategory = classifyRegion(lat, lon, placeRaw);
     const { severity, bulletinType } = classifySeverity(mag, depthKm, false, null, regionCategory);
 

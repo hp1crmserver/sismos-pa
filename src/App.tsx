@@ -26,7 +26,7 @@ import type {
   ThemeMode,
   WorkspaceTab,
 } from './types/seismic';
-import { triggerEventAlertAudio } from './utils/audioAlerts';
+import { triggerEventAlertAudio, unlockAudioAlerts } from './utils/audioAlerts';
 import { exportSingleEventPdf } from './utils/pdfExporter';
 import { fetchSeismicFeedClient } from './utils/seismicClient';
 import { BULLETIN_LABEL, SEVERITY_META, formatPanamaDateTime } from './utils/seismicFormat';
@@ -209,6 +209,24 @@ export default function App() {
     fetchSeismicFeed(false);
   }, [fetchSeismicFeed]);
 
+  // Unlock Web Audio on first mobile/desktop interaction so background polling alerts play sound
+  useEffect(() => {
+    const handleFirstInteraction = () => {
+      unlockAudioAlerts();
+      window.removeEventListener('pointerdown', handleFirstInteraction);
+      window.removeEventListener('touchstart', handleFirstInteraction);
+      window.removeEventListener('keydown', handleFirstInteraction);
+    };
+    window.addEventListener('pointerdown', handleFirstInteraction, { passive: true });
+    window.addEventListener('touchstart', handleFirstInteraction, { passive: true });
+    window.addEventListener('keydown', handleFirstInteraction, { passive: true });
+    return () => {
+      window.removeEventListener('pointerdown', handleFirstInteraction);
+      window.removeEventListener('touchstart', handleFirstInteraction);
+      window.removeEventListener('keydown', handleFirstInteraction);
+    };
+  }, []);
+
   // Real-time polling every 45 seconds
   useEffect(() => {
     const id = setInterval(() => {
@@ -228,6 +246,7 @@ export default function App() {
   };
 
   const handleTestAlert = () => {
+    unlockAudioAlerts();
     const sampleEvent: SeismicEvent = selectedEvent ??
       events[0] ?? {
         id: 'TEST:igcup-sample',
@@ -322,7 +341,7 @@ export default function App() {
             </svg>
             <span>GeoAlert-pa</span>
             <span className="text-[11px] font-mono font-semibold text-slate-500 dark:text-slate-400">
-              v1.1
+              v1.2
             </span>
           </a>
 
@@ -629,9 +648,10 @@ export default function App() {
               event={selectedEvent}
               onOpenGenerator={handleOpenGeneratorForEvent}
               onExportEventPdf={(ev) => exportSingleEventPdf(ev)}
-              onPlayAlertSound={(ev) =>
-                triggerEventAlertAudio(ev, { ...audioSettings, enabled: true, minMagnitude: 0 })
-              }
+              onPlayAlertSound={(ev) => {
+                unlockAudioAlerts();
+                triggerEventAlertAudio(ev, { ...audioSettings, enabled: true, minMagnitude: 0 });
+              }}
             />
           </div>
         )}
@@ -678,7 +698,7 @@ export default function App() {
             Fuentes sismológicas: Instituto de Geociencias (IGC-UP) · USGS · EMSC · Cartografía base Esri
           </span>
           <span className="font-mono">
-            GeoAlert-pa · Hora oficial de referencia: América/Panamá (UTC-5)
+            GeoAlert-pa v1.2 · Hora oficial de referencia: América/Panamá (UTC-5)
           </span>
         </div>
       </footer>

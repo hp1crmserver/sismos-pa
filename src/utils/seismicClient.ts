@@ -137,25 +137,82 @@ async function fetchEmscDirect(
   }
 }
 
+const IGCUP_URL = 'https://sismosgeociencias.up.ac.pa/';
+
+async function fetchTextWithTimeout(url: string, timeoutMs: number): Promise<string> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.text();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function fetchIgcUpFromRelay(
+  url: string,
+  isAllOriginsJson = false
+): Promise<SeismicEvent[]> {
+  const raw = await fetchTextWithTimeout(url, 7000);
+  const html = isAllOriginsJson
+    ? ((JSON.parse(raw) as { contents?: string }).contents ?? '')
+    : raw;
+  if (!html || !html.includes('ultimosismo.html')) {
+    throw new Error('Respuesta sin eventos IGC-UP');
+  }
+  const events = parseIgcUpHtml(html);
+  if (events.length === 0) {
+    throw new Error('0 eventos parseados');
+  }
+  return events;
+}
+
 async function fetchIgcUpDirect(): Promise<{ events: SeismicEvent[]; status: AgencyStatus }> {
   const fetchedAt = Date.now();
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 6500);
-    const res = await fetch('https://sismosgeociencias.up.ac.pa/', {
-      signal: controller.signal,
-    });
-    clearTimeout(timer);
+  const encoded = encodeURIComponent(IGCUP_URL);
 
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const html = await res.text();
-    const events = parseIgcUpHtml(html);
+  // 1. Race direct fetch + public CORS relays so fastest live response wins
+  try {
+    const events = await Promise.any([
+      fetchIgcUpFromRelay(IGCUP_URL, false),
+      fetchIgcUpFromRelay(`https://api.allorigins.win/raw?url=${encoded}`, false),
+      fetchIgcUpFromRelay(`https://api.allorigins.win/get?url=${encoded}`, true),
+      fetchIgcUpFromRelay(`https://api.codetabs.com/v1/proxy?quest=${encoded}`, false),
+      fetchIgcUpFromRelay(`https://api.cors.lol/?url=${encoded}`, false),
+      fetchIgcUpFromRelay(`https://thingproxy.freeboard.io/fetch/${IGCUP_URL}`, false),
+    ]);
 
     return {
       events,
       status: { source: 'IGC-UP', ok: true, count: events.length, lastUpdated: fetchedAt },
     };
   } catch {
+    // 2. Fallback to GitHub Actions build-time/hourly snapshot if all live relays fail
+    try {
+      const res = await fetch(`./data/igcup-snapshot.json?t=${Math.floor(Date.now() / 60000)}`);
+      if (res.ok) {
+        const snapshot = (await res.json()) as {
+          events?: SeismicEvent[];
+          fetchedAt?: number;
+        };
+        if (Array.isArray(snapshot.events) && snapshot.events.length > 0) {
+          return {
+            events: snapshot.events,
+            status: {
+              source: 'IGC-UP',
+              ok: true,
+              count: snapshot.events.length,
+              lastUpdated: snapshot.fetchedAt || fetchedAt,
+            },
+          };
+        }
+      }
+    } catch {
+      // ignore snapshot failure
+    }
+
     return {
       events: [],
       status: {
@@ -163,7 +220,7 @@ async function fetchIgcUpDirect(): Promise<{ events: SeismicEvent[]; status: Age
         ok: false,
         count: 0,
         lastUpdated: fetchedAt,
-        error: 'Requiere servidor Node/Express (bloqueo CORS en hosting estático)',
+        error: 'No se pudo conectar con IGC-UP en modo estático',
       },
     };
   }
